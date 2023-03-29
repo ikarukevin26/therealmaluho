@@ -1,0 +1,129 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using MySql.Data.MySqlClient;
+using IronBarCode;
+using System.IO;
+using ExcelDataReader;
+using Excel;
+using Microsoft.Office.Interop.Excel;
+
+namespace TheRealMaluho
+{
+    public partial class frmLoadCSV : Form
+    {
+        public frmLoadCSV()
+        {
+            InitializeComponent();
+        }
+
+        private void frmLoadCSV_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnUpload_Click(object sender, EventArgs e)
+        {
+            Microsoft.Office.Interop.Excel.Application xlApp;
+            Microsoft.Office.Interop.Excel.Workbook xlWorkbook;
+            Microsoft.Office.Interop.Excel.Worksheet xlWorksheet;
+            Microsoft.Office.Interop.Excel.Range xlRange;
+
+            int xlRow;
+            string strFileName;
+
+            openFD.Filter = "Excel office |*.xls; *.xlsx";
+            openFD.ShowDialog();
+            strFileName = openFD.FileName;
+
+            if (strFileName != "")
+            {
+                xlApp = new Microsoft.Office.Interop.Excel.Application();
+                xlWorkbook = xlApp.Workbooks.Open(strFileName);
+                xlWorksheet = xlWorkbook.Worksheets["Inventory"];
+                xlRange = xlWorksheet.UsedRange;
+
+                int i = 0;
+                for (xlRow = 2; xlRow <= xlRange.Rows.Count; xlRow++)
+                {
+                    if (xlRange.Cells[xlRow, 1].Text != "")
+                    {
+                        i++;
+                        dataGridView1.Rows.Add(i, xlRange.Cells[xlRow, 1].Text, xlRange.Cells[xlRow, 2].Text, xlRange.Cells[xlRow, 3].Text, xlRange.Cells[xlRow, 4].Text, xlRange.Cells[xlRow, 5].Text, xlRange.Cells[xlRow, 6].Text, xlRange.Cells[xlRow, 7].Text, xlRange.Cells[xlRow, 8].Text, xlRange.Cells[xlRow, 9].Text);
+                    }
+
+                }
+                xlWorkbook.Close();
+                xlApp.Quit();
+
+
+            }
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            try
+            {
+
+
+
+                for (int i = 0; i < dataGridView1.Rows.Count; i++)
+                {
+                    MySqlConnection con = new MySqlConnection("datasource=localhost;database=therealmaluho;port=3306;userid=root;password=root");
+                    con.Open();
+                    MySqlCommand cmd = new MySqlCommand("insert into inventory(Barcode,Apparel,Brand,ItemName,Size,Quantity,Itemcost,Note,Date)values(@Barcode,@Apparel,@Brand,@ItemName,@Size,@Quantity,@Itemcost,@Note,@Date)", con);
+                    cmd.Parameters.AddWithValue("@Barcode", dataGridView1.Rows[i].Cells[1].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Apparel", dataGridView1.Rows[i].Cells[2].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Brand", dataGridView1.Rows[i].Cells[3].Value.ToString());
+                    cmd.Parameters.AddWithValue("@ItemName", dataGridView1.Rows[i].Cells[4].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Size", dataGridView1.Rows[i].Cells[5].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Quantity", dataGridView1.Rows[i].Cells[6].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Itemcost", dataGridView1.Rows[i].Cells[7].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Note", dataGridView1.Rows[i].Cells[8].Value.ToString());
+                    cmd.Parameters.AddWithValue("@Date", dataGridView1.Rows[i].Cells[9].Value.ToString());
+                    MySqlDataReader reader = cmd.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        MessageBox.Show("Data Can't be saved, contact your Admin");
+                        con.Close();
+                        reader.Dispose();
+                    }
+                    else
+                    {
+
+
+                        con.Close();
+                        reader.Dispose();
+                        MessageBox.Show("Data Successfully saved");
+                    }
+
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+    }
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            frmInventory mf= new frmInventory();
+            mf.ShowDialog();
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+            frmInventory mf = new frmInventory();
+            mf.ShowDialog();
+        }
+    }
+}
